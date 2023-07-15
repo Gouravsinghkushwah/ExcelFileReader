@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>File Upload and Display Example</title>
+  <style>
+    body { font-family: Arial, sans-serif;  padding: 20px; }
+    form {
+      margin-bottom: 20px;
+    } table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    th, td {
+      padding: 8px;
+      border: 1px solid #ddd;
+    }
+    th {
+      background-color: #f2f2f2;
+    } #downloadButton {
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      cursor: pointer;
+    } 
+    #downloadButton:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <form id="uploadForm">
+    <input type="file" id="fileInput">
+    <button type="submit">Display File</button>
+  </form>
+
+  <div id="fileInfo"></div>
+
+  <button id="downloadButton" disabled>Download Template</button>
+
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <script>
+    var uploadForm = document.getElementById('uploadForm');
+    var fileInput = document.getElementById('fileInput');
+    var downloadButton = document.getElementById('downloadButton');
+
+    uploadForm.addEventListener('submit', function(event) {
+      event.preventDefault();
+      var uploadedFile = fileInput.files[0];
+      displayUploadedFile(uploadedFile);
+      enableDownloadButton(uploadedFile);
+    });
+
+    function displayUploadedFile(file) {
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        var data = new Uint8Array(event.target.result);
+        var workbook = XLSX.read(data, { type: 'array' });
+        var sheetName = workbook.SheetNames[0];
+        var worksheet = workbook.Sheets[sheetName];
+        var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        var fileInfo = document.getElementById('fileInfo');
+        fileInfo.innerHTML = '';
+
+        var table = document.createElement('table');
+        var headerRow = document.createElement('tr');
+        for (var i = 0; i < jsonData[0].length; i++) {
+          var headerCell = document.createElement('th');
+          headerCell.textContent = jsonData[0][i];
+          headerRow.appendChild(headerCell);
+        }
+        table.appendChild(headerRow);
+
+        for (var j = 1; j < jsonData.length; j++) {
+          var dataRow = document.createElement('tr');
+          for (var k = 0; k < jsonData[j].length; k++) {
+            var dataCell = document.createElement('td');
+            dataCell.textContent = jsonData[j][k];
+            dataRow.appendChild(dataCell);
+          }
+          table.appendChild(dataRow);
+        }
+
+        fileInfo.appendChild(table);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function enableDownloadButton(file) {
+      downloadButton.disabled = false;
+      downloadButton.addEventListener('click', function() {
+        downloadFile(file);
+      });
+    }
+
+    function downloadFile(file) {
+      var url = URL.createObjectURL(file);
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
